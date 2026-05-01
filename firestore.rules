@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'bamwrv2@gmail.com';
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- Users Collection ---
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      
+      function isValidUser(data) {
+        return data.fullName is string && data.fullName.size() <= 100 &&
+               data.email is string && data.email.size() <= 100 &&
+               data.whatsapp is string && data.whatsapp.size() <= 20;
+      }
+
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data) && 
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fullName', 'whatsapp', 'purchasedProducts'])) ||
+                      isAdmin();
+    }
+
+    // --- Orders Collection ---
+    match /orders/{orderId} {
+      allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow list: if isAdmin();
+      
+      function isValidOrder(data) {
+        return data.productId is string && data.productId.size() <= 50 &&
+               data.productTitle is string && data.productTitle.size() <= 100 &&
+               data.fullName is string && data.fullName.size() <= 100 &&
+               data.email is string && data.email.size() <= 100 &&
+               data.whatsapp is string && data.whatsapp.size() <= 20 &&
+               data.paymentMethod in ['vodafone', 'instapay'] &&
+               data.lastThreeDigits is string && data.lastThreeDigits.size() == 3 &&
+               data.status in ['pending', 'completed', 'cancelled'] &&
+               data.createdAt == request.time;
+      }
+
+      // Allow anyone to create an order (as per user request: not condition to be logged in)
+      allow create: if isValidOrder(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Public and private information for registered users",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "purchasedProducts": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["uid", "fullName", "email", "whatsapp", "createdAt"]
+    },
+    "Order": {
+      "title": "Product Order",
+      "description": "A request to purchase a digital product",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "productTitle": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "paymentMethod": { "type": "string", "enum": ["vodafone", "instapay"] },
+        "lastThreeDigits": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed", "cancelled"] },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "fullName", "email", "whatsapp", "paymentMethod", "lastThreeDigits", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Users profile collection"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Collection of all order requests"
+    }
+  }
+}
